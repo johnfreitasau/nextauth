@@ -1,12 +1,22 @@
-import { createContext, ReactNode } from "react";
-
+import { apiResolver } from "next/dist/next-server/server/api-utils";
+import { createContext, ReactNode, useState } from "react";
+import { setCookie } from "nookies";
+import Router from "next/router";
+import { api } from "../services/api";
 type SignInCredentials = {
   email: string;
   password: string;
 };
 
+type User = {
+  email: string;
+  permissions: string[];
+  roles: string[];
+};
+
 type AuthContextData = {
   signIn(credentials: SignInCredentials): Promise<void>;
+  user: User;
   isAuthenticated: boolean;
 };
 
@@ -17,14 +27,50 @@ type AuthProviderProps = {
 export const AuthContext = createContext({} as AuthContextData);
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const isAuthenticated = false;
+  const [user, setUser] = useState<User>();
+
+  const isAuthenticated = !!user;
 
   async function signIn({ email, password }: SignInCredentials) {
-    console.log("xxx", { email, password });
+    try {
+      console.log("xxx", { email, password });
+      const response = await api.post("sessions", {
+        email,
+        password,
+      });
+
+      const { token, refreshToken, permissions, roles } = response.data;
+
+      //sessionstorage
+      //localstorage
+      //cookies
+
+      setUser({
+        email,
+        permissions,
+        roles,
+      });
+
+      setCookie(undefined, "nextauth.token", token, {
+        maxAge: 60 * 60 * 24 * 30, // 30 days
+        path: "/", //paths that should have the access to the cookie
+      });
+
+      setCookie(undefined, "nextauth.refreshToken", refreshToken, {
+        maxAge: 60 * 60 * 24 * 30,
+        path: "/",
+      });
+
+      Router.push("/dashboard");
+
+      console.log(response.data);
+    } catch (err) {
+      console.log(err);
+    }
   }
 
   return (
-    <AuthContext.Provider value={{ signIn, isAuthenticated }}>
+    <AuthContext.Provider value={{ signIn, isAuthenticated, user }}>
       {children}
     </AuthContext.Provider>
   );
