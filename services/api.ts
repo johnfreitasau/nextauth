@@ -1,5 +1,7 @@
 import axios, { AxiosError } from "axios";
-import { parseCookies, setCookie } from "nookies";
+import Router from "next/router";
+import { destroyCookie, parseCookies, setCookie } from "nookies";
+import { SignOut } from "../contexts/AuthContext";
 
 let cookies = parseCookies();
 let isRefreshing = false;
@@ -66,7 +68,7 @@ api.interceptors.response.use(
 
         //onSuccess: if the refreshToken process is complete
         //onFailure: if refreshToken fails
-        return new Promise((resolve, reject) => {
+        return new Promise((resolve, reject) => { //because Axios doesn't accept Async
           failedRequestQueue.push({
             onSuccess: (token: string) => {
               originalConfig.headers['Authorization'] = `Bearer ${token}`
@@ -77,10 +79,16 @@ api.interceptors.response.use(
               reject(error)
             }
           })
-        }) //because Axios doesn't accept Async
+        }) 
       } else {
         //logout user
+        SignOut();
       }
     }
+
+    return Promise.reject(error);
+
+
+
   }
 );

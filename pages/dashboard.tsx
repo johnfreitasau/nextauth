@@ -8,7 +8,7 @@ export default function Dashboard() {
   console.log("USER:", user);
 
   useEffect(() => {
-    api.get("/me").then((response) => response);
+    api.get("/me").then((response) => response).catch(err => console.log(err));
   }, []);
 
   return <h1>Dashboard: {user?.email}</h1>;
